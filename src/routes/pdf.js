@@ -51,4 +51,38 @@ router.post('/generate', upload.array('image', 50), async (req, res) =>
     }
 });
 
+router.post('/add-pages', upload.array('image', 50), async (req, res) =>
+{
+    const username = req.body.username;
+
+    if (!username)
+    {
+        return res.status(400).json({ error: 'Username not provided.' });
+    }
+
+    if (!req.files || req.files.length === 0)
+    {
+        return res.status(400).json({ error: 'No images provided.' });
+    }
+
+    try
+    {
+        // Create an instance of the PdfHelper class
+        const pdfHelper = new PdfHelper();
+
+        // Save the images to "uploads/username" directory
+        pdfHelper.saveImagesToUserDir(username, req.files);
+
+        // Add images to the existing PDF
+        const pdfPath = await pdfHelper.addImagesToPDF(username);
+
+        return res.status(200).json({ message: 'Pages added to PDF successfully.', pdfPath });
+    } catch (error)
+    {
+        return res.status(500).json({ error });
+    }
+});
+
+
+
 module.exports = router;

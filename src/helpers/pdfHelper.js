@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
+const { PDFDocument: PDFLibDocument, rgb } = require('pdf-lib');
 
 class PdfHelper
 {
@@ -96,63 +97,51 @@ class PdfHelper
         }
     }
 
-    async addImagesToPDF(username)
+    async addPagesToPDF(username, newImages)
     {
         const userDir = path.join('uploads', username);
-        const pdfPath = path.join('pdfs', `${username}_images.pdf`);
+        const existingPDFPath = path.join('pdfs', `${username}_images.pdf`);
 
-        return new Promise((resolve, reject) =>
+        if (!fs.existsSync(existingPDFPath))
         {
-            fs.readdir(userDir, async (err, files) =>
-            {
-                if (err)
-                {
-                    return reject('Error reading user directory.');
-                }
+            throw new Error('Existing PDF file not found.');
+        }
 
-                if (files.length === 0)
-                {
-                    return reject('No images found for the user.');
-                }
+        // Read the existing PDF using pdf-lib
+        const existingPDFBytes = fs.readFileSync(existingPDFPath);
+        const existingPDF = await PDFLibDocument.load(existingPDFBytes);
+        const { width, height } = existingPDF.getPage(0).getSize();
 
-                const existingPDFStream = fs.createReadStream(pdfPath);
+        // Append new pages with the new images to the existing PDF
+        for (const newImage of newImages)
+        {
+            const page = existingPDF.addPage([width, height]);
+            const imagePath = path.join(userDir, newImage.filename);
+            const imageBytes = fs.readFileSync(imagePath);
+            const image = await existingPDF.embedJpg(imageBytes);
 
-                // Create a new PDF document
-                const doc = new PDFDocument();
-                const tempPdfPath = path.join('pdfs', `${username}_temp.pdf`);
-                const writeStream = fs.createWriteStream(tempPdfPath);
+            const imageWidth = image.width;
+            const imageHeight = image.height;
+            const scale = Math.min(width / imageWidth, height / imageHeight);
 
-                doc.pipe(writeStream);
-
-                // Read the existing PDF and add its pages to the new PDF
-                existingPDFStream.pipe(doc);
-
-                // Add each new image to the PDF as a new page
-                for (const file of files)
-                {
-                    doc.addPage(); // Add a new page for each image
-                    const imagePath = path.join(userDir, file);
-                    doc.image(imagePath, {
-                        fit: [500, 500],
-                    });
-                }
-
-                // Finalize the new PDF and close the write stream
-                doc.end();
-                writeStream.on('finish', () =>
-                {
-                    // Replace the existing PDF with the new one
-                    fs.renameSync(tempPdfPath, pdfPath);
-
-                    // Delete the user directory after adding pages to the PDF
-                    this.deleteUserDirectory(username);
-
-                    resolve(pdfPath); // Resolve with the updated PDF file path
-                });
+            page.drawImage(image, {
+                x: 0,
+                y: 0,
+                width: imageWidth * scale,
+                height: imageHeight * scale,
             });
-        });
-    }
+        }
 
+        // Save the updated PDF
+        const updatedPDFBytes = await existingPDF.save();
+
+        // Write the updated PDF back to the file
+        fs.writeFileSync(existingPDFPath, updatedPDFBytes);
+
+        console.log('Pages successfully added to existing PDF:', existingPDFPath);
+
+        return existingPDFPath;
+    }
 }
 
 module.exports = PdfHelper;

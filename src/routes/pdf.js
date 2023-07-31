@@ -33,11 +33,11 @@ router.route('/createFolder').get((request, response) =>
 
 router.post('/generate', upload.array('image', 50), async (req, res) =>
 {
-    const username = req.body.username;
+    const notebookName = req.body.notebookName;
 
-    if (!username)
+    if (!notebookName)
     {
-        return res.status(400).json({ error: 'Username not provided.' });
+        return res.status(400).json({ error: 'notebookName not provided.' });
     }
 
     if (!req.files || req.files.length === 0)
@@ -48,14 +48,14 @@ router.post('/generate', upload.array('image', 50), async (req, res) =>
     // Create an instance of the PdfHelper class
     const pdfHelper = new PdfHelper();
 
-    // Save the images to "uploads/username" directory
-    pdfHelper.saveImagesToUserDir(username, req.files);
+    // Save the images to "uploads/notebookName" directory
+    pdfHelper.saveImagesToUserDir(notebookName, req.files);
 
     try
     {
         // Generate PDF
-        const pdfPath = await pdfHelper.convertToPDF(username);
-        pdfHelper.deleteUserDirectory(username)
+        const pdfPath = await pdfHelper.convertToPDF(notebookName);
+        pdfHelper.deleteUserDirectory(notebookName)
 
         return res.status(200).json({ message: 'PDF generated successfully.', pdfPath });
 
@@ -67,11 +67,11 @@ router.post('/generate', upload.array('image', 50), async (req, res) =>
 
 router.post('/add-pages', upload.array('image', 50), async (req, res) =>
 {
-    const username = req.body.username;
+    const notebookName = req.body.notebookName;
 
-    if (!username)
+    if (!notebookName)
     {
-        return res.status(400).json({ error: 'Username not provided in the request body.' });
+        return res.status(400).json({ error: 'notebookName not provided in the request body.' });
     }
 
     if (!req.files || req.files.length === 0)
@@ -84,12 +84,12 @@ router.post('/add-pages', upload.array('image', 50), async (req, res) =>
         // Create an instance of the PdfHelper class
         const pdfHelper = new PdfHelper();
 
-        // Save the images to "uploads/username" directory
-        pdfHelper.saveImagesToUserDir(username, req.files);
+        // Save the images to "uploads/notebookName" directory
+        pdfHelper.saveImagesToUserDir(notebookName, req.files);
 
         // Add pages to the existing PDF
-        const pdfPath = await pdfHelper.addPagesToPDF(username, req.files);
-        pdfHelper.deleteUserDirectory(username)
+        const pdfPath = await pdfHelper.addPagesToPDF(notebookName, req.files);
+        pdfHelper.deleteUserDirectory(notebookName)
 
 
         return res.status(200).json({ message: 'Pages added to PDF successfully.', pdfPath });
@@ -120,26 +120,5 @@ async function createFolder()
     }
 }
 
-async function uploadFileToDirectory()
-{
-    try
-    {
-        const localFilePath = '/path/to/your/local/file.txt'; // Replace with the path to the file on your local machine
-        const dropboxFolderPath = '/path/to/your/dropbox/folder'; // Replace with the path to the Dropbox folder you want to save the file in
-        const fileName = 'myfile.txt'; // Replace with the desired file name in the Dropbox folder
-
-        const fileContents = fs.readFileSync(localFilePath);
-
-        const response = await dbx.filesUpload({
-            path: dropboxFolderPath + '/' + fileName,
-            contents: fileContents,
-        });
-
-        console.log('File uploaded successfully:', response);
-    } catch (error)
-    {
-        console.error('Error uploading file:', error);
-    }
-}
 
 module.exports = router;

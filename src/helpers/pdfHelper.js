@@ -12,9 +12,9 @@ const dbx = new Dropbox({
 })
 class PdfHelper
 {
-    saveImagesToUserDir(username, files)
+    saveImagesToUserDir(notebookName, files)
     {
-        const userDir = path.join('uploads', username);
+        const userDir = path.join('uploads', notebookName);
         if (!fs.existsSync(userDir))
         {
             fs.mkdirSync(userDir, { recursive: true });
@@ -28,10 +28,10 @@ class PdfHelper
     }
 
 
-    async convertToPDF(username)
+    async convertToPDF(notebookName)
     {
-        const userDir = path.join('uploads', username);
-        const pdfPath = path.join('pdfs', `${username}_images.pdf`);
+        const userDir = path.join('uploads', notebookName);
+        const pdfPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
 
         return new Promise((resolve, reject) =>
         {
@@ -86,7 +86,7 @@ class PdfHelper
                         const pdfContents = fs.readFileSync(pdfPath);
 
                         // Upload the PDF to the "Masters" directory in the user's Dropbox account
-                        const dropboxFilePath = dropboxMastersDir + `/${username}_images.pdf`;
+                        const dropboxFilePath = dropboxMastersDir + `/${notebookName}_notebook.pdf`;
                         const uploadResponse = await dbx.filesUpload({
                             path: dropboxFilePath,
                             contents: pdfContents,
@@ -111,71 +111,10 @@ class PdfHelper
             });
         });
     }
-    // async convertToPDF(username)
-    // {
-    //     const userDir = path.join('uploads', username);
-    //     const pdfPath = path.join('pdfs', `${username}_images.pdf`);
 
-    //     return new Promise((resolve, reject) =>
-    //     {
-    //         fs.readdir(userDir, async (err, files) =>
-    //         {
-    //             if (err)
-    //             {
-    //                 return reject('Error reading user directory.');
-    //             }
-
-    //             if (files.length === 0)
-    //             {
-    //                 return reject('No images found for the user.');
-    //             }
-
-    //             // Create the "pdfs" directory if it doesn't exist
-    //             if (!fs.existsSync('pdfs'))
-    //             {
-    //                 fs.mkdirSync('pdfs');
-    //             }
-
-    //             // Create a new PDF document
-    //             const doc = new PDFDocument();
-    //             const writeStream = fs.createWriteStream(pdfPath);
-    //             doc.pipe(writeStream);
-
-    //             // Add each image to the PDF as a new page
-    //             for (const [index, file] of files.entries())
-    //             {
-    //                 if (index > 0)
-    //                 {
-    //                     doc.addPage(); // Add a new page for each image except the first one
-    //                 }
-
-    //                 const imagePath = path.join(userDir, file);
-    //                 doc.image(imagePath, {
-    //                     fit: [500, 500],
-    //                 });
-    //             }
-
-    //             // Finalize the PDF and close the write stream
-    //             doc.end();
-    //             writeStream.on('finish', () =>
-    //             {
-    //                 console.log('PDF successfully written to file:', pdfPath);
-    //                 resolve(pdfPath); // Resolve with the generated PDF file path
-    //             });
-
-    //             writeStream.on('error', (err) =>
-    //             {
-    //                 console.error('Error writing PDF to file:', err);
-    //                 reject('Error writing PDF to file.');
-    //             });
-    //         });
-    //     });
-    // }
-
-
-    deleteUserDirectory(username)
+    deleteUserDirectory(notebookName)
     {
-        const userDir = path.join('uploads', username);
+        const userDir = path.join('uploads', notebookName);
 
         if (fs.existsSync(userDir))
         {
@@ -187,10 +126,10 @@ class PdfHelper
         }
     }
 
-    async addPagesToPDF(username, newImages)
+    async addPagesToPDF(notebookName, newImages)
     {
-        const userDir = path.join('uploads', username);
-        const existingPDFPath = path.join('pdfs', `${username}_images.pdf`);
+        const userDir = path.join('uploads', notebookName);
+        const existingPDFPath = path.join('pdfs',`${notebookName}_notebook.pdf`);
 
         if (!fs.existsSync(existingPDFPath))
         {

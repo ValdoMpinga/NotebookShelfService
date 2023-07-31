@@ -6,8 +6,8 @@ const fs = require('fs');
 const storage = multer.diskStorage({
     destination: function (req, file, cb)
     {
-        const username = req.body.username;
-        const userDir = path.join('uploads', username);
+        const notebookName = req.body.notebookName;
+        const userDir = path.join('uploads', notebookName);
 
         // Create the directory if it doesn't exist
         if (!fs.existsSync(userDir))

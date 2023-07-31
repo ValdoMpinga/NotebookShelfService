@@ -1,3 +1,7 @@
+require('dotenv').config();
+
+const { Dropbox } = require('dropbox');
+
 class PdfModel
 {
     constructor()

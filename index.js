@@ -5,8 +5,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 //routes
-
 const pdfRouter = require('./src/routes/pdf');
+
 // Create an Express app
 const app = express();
 
@@ -17,9 +17,6 @@ app.use(cors())
 // Middleware to parse JSON requests
 app.use(bodyParser.json());
 
-app.listen
-    (
-        process.env.PORT, () => console.log(`server is listening on port ${process.env.PORT}`)
-    );
+app.listen(process.env.PORT, () => console.log(`server is listening on port ${process.env.PORT}`));
 
-app.use('/pdf', pdfRouter)
+app.use('/pdf', pdfRouter);

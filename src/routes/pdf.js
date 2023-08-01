@@ -24,22 +24,19 @@ router.route('/get').get((request, response) =>
     response.status(200).send("Hello");
 });
 
-router.route('/createFolder').get((request, response) =>
-{
-    // createFolder()
-    return response.status(200).json({ message: 'Req processed, check logs.' });
 
-});
-
-router.post('/generate', upload.array('image', 50), async (req, res) =>
+router.post('/create-notebook', upload.array('image', 50), async (req, res) =>
 {
+    const shelfName = req.body.shelfName;
     const notebookName = req.body.notebookName;
 
-    if (!notebookName)
-    {
-        return res.status(400).json({ error: 'notebookName not provided.' });
-    }
+    if (!shelfName)
+        return res.status(400).json({ error: 'shelfName not provided in the request body.' });
 
+
+    if (!notebookName)
+        return res.status(400).json({ error: 'notebookName not provided in the request body.' });
+    
     if (!req.files || req.files.length === 0)
     {
         return res.status(400).json({ error: 'No images provided.' });
@@ -54,7 +51,7 @@ router.post('/generate', upload.array('image', 50), async (req, res) =>
     try
     {
         // Generate PDF
-        const pdfPath = await pdfHelper.convertToPDF(notebookName);
+        const pdfPath = await pdfHelper.convertToPDF(shelfName,notebookName);
         pdfHelper.deleteUserDirectory(notebookName)
 
         return res.status(200).json({ message: 'PDF generated successfully.', pdfPath });
@@ -65,14 +62,18 @@ router.post('/generate', upload.array('image', 50), async (req, res) =>
     }
 });
 
-router.post('/add-pages', upload.array('image', 50), async (req, res) =>
+router.post('/add-pages-to-notebook', upload.array('image', 50), async (req, res) =>
 {
+    const shelfName = req.body.shelfName;
     const notebookName = req.body.notebookName;
 
+    if (!shelfName)
+        return res.status(400).json({ error: 'shelfName not provided in the request body.' });
+    
+
     if (!notebookName)
-    {
         return res.status(400).json({ error: 'notebookName not provided in the request body.' });
-    }
+    
 
     if (!req.files || req.files.length === 0)
     {
@@ -88,7 +89,7 @@ router.post('/add-pages', upload.array('image', 50), async (req, res) =>
         pdfHelper.saveImagesToUserDir(notebookName, req.files);
 
         // Add pages to the existing PDF
-        const pdfPath = await pdfHelper.addPagesToPDF(notebookName, req.files);
+        const pdfPath = await pdfHelper.addPagesToPDF(shelfName, notebookName, req.files);
         pdfHelper.deleteUserDirectory(notebookName)
 
 
@@ -99,26 +100,6 @@ router.post('/add-pages', upload.array('image', 50), async (req, res) =>
     }
 });
 
-
-
-async function createFolder()
-{
-    try
-    {
-        const folderName = 'Masters'; // Replace with the desired folder name
-
-        const response = await dbx.filesCreateFolderV2({
-
-            path: '/' + folderName, // Path where you want to create the folder, e.g., /New Folder
-            autorename: false, // Set this to true to automatically rename the folder if a folder with the same name already exists
-        });
-
-        console.log('Folder created successfully:', response);
-    } catch (error)
-    {
-        console.error('Error creating folder:', error);
-    }
-}
 
 
 module.exports = router;

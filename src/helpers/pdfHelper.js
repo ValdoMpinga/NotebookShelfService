@@ -28,7 +28,7 @@ class PdfHelper
     }
 
 
-    async convertToPDF(notebookName)
+    async convertToPDF(shelfName, notebookName)
     {
         const userDir = path.join('uploads', notebookName);
         const pdfPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
@@ -112,25 +112,9 @@ class PdfHelper
         });
     }
 
-    deleteUserDirectory(notebookName)
+    async addPagesToPDF(shelfName,notebookName, newImages)
     {
         const userDir = path.join('uploads', notebookName);
-
-        if (fs.existsSync(userDir))
-        {
-            fs.rmdirSync(userDir, { recursive: true });
-            console.log(`User directory "${userDir}" deleted successfully.`);
-        } else
-        {
-            console.log(`User directory "${userDir}" not found.`);
-        }
-    }
-
-
-    async addPagesToPDF(notebookName, newImages)
-    {
-        const userDir = path.join('uploads', notebookName);
-        const existingPDFPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
 
         try
         {
@@ -183,51 +167,25 @@ class PdfHelper
         }
     }
 
-    // async addPagesToPDF(notebookName, newImages)
-    // {
-    //     const userDir = path.join('uploads', notebookName);
-    //     const existingPDFPath = path.join('pdfs',`${notebookName}_notebook.pdf`);
+    deleteUserDirectory(notebookName)
+    {
+        const userDir = path.join('uploads', notebookName);
 
-    //     if (!fs.existsSync(existingPDFPath))
-    //     {
-    //         throw new Error('Existing PDF file not found.');
-    //     }
+        if (fs.existsSync(userDir))
+        {
+            fs.rmdirSync(userDir, { recursive: true });
+            console.log(`User directory "${userDir}" deleted successfully.`);
 
-    //     // Read the existing PDF using pdf-lib
-    //     const existingPDFBytes = fs.readFileSync(existingPDFPath);
-    //     const existingPDF = await PDFLibDocument.load(existingPDFBytes);
-    //     const { width, height } = existingPDF.getPage(0).getSize();
+            if (fs.existsSync('pdfs'))
+                fs.rmdirSync('pdfs', { recursive: true });
+        } else
+        {
+            console.log(`User directory "${userDir}" not found.`);
+        }
+    }
 
-    //     // Append new pages with the new images to the existing PDF
-    //     for (const newImage of newImages)
-    //     {
-    //         const page = existingPDF.addPage([width, height]);
-    //         const imagePath = path.join(userDir, newImage.filename);
-    //         const imageBytes = fs.readFileSync(imagePath);
-    //         const image = await existingPDF.embedJpg(imageBytes);
 
-    //         const imageWidth = image.width;
-    //         const imageHeight = image.height;
-    //         const scale = Math.min(width / imageWidth, height / imageHeight);
-
-    //         page.drawImage(image, {
-    //             x: 0,
-    //             y: 0,
-    //             width: imageWidth * scale,
-    //             height: imageHeight * scale,
-    //         });
-    //     }
-
-    //     // Save the updated PDF
-    //     const updatedPDFBytes = await existingPDF.save();
-
-    //     // Write the updated PDF back to the file
-    //     fs.writeFileSync(existingPDFPath, updatedPDFBytes);
-
-    //     console.log('Pages successfully added to existing PDF:', existingPDFPath);
-
-    //     return existingPDFPath;
-    // }
+   
 }
 
 module.exports = PdfHelper;

@@ -270,6 +270,49 @@ class PdfHelper
         }
     }
 
+    async listDropboxEndpoints(folderPath = '')
+    {
+        try
+        {
+            // Get the list of files and directories in the specified folder
+            const listResponse = await dbx.filesListFolder({
+                path: folderPath,
+            });
+
+            const endpoints = listResponse.result.entries.map((entry) => entry.name);
+            return endpoints;
+        } catch (dropboxError)
+        {
+            console.error('Error listing endpoints on Dropbox:', dropboxError);
+            throw dropboxError;
+        }
+    }
+
+    async listFilesInFolder(shelfName)
+    {
+        try
+        {
+            // Concatenate shelfName with a leading slash to form the folder path
+            const folderPath = `/${shelfName}`;
+
+            // Get the list of files and directories in the specified folder
+            const listResponse = await dbx.filesListFolder({
+                path: folderPath,
+            });
+
+            // Filter the list to get only the file names
+            const fileNames = listResponse.result.entries
+                .filter((entry) => entry['.tag'] === 'file')
+                .map((entry) => entry.name);
+
+            return fileNames;
+        } catch (dropboxError)
+        {
+            console.error('Error listing files in folder on Dropbox:', dropboxError);
+            throw dropboxError;
+        }
+    }
+
 }
 
 module.exports = PdfHelper;

@@ -235,6 +235,45 @@ router.post('/rename-notebook', async (req, res) =>
     }
 });
 
+router.get('/list-endpoints', async (req, res) =>
+{
+    try
+    {
+        const pdfHelper = new PdfHelper();
+
+        // List all endpoints on Dropbox
+        const endpoints = await pdfHelper.listDropboxEndpoints();
+
+        return res.status(200).json({ endpoints });
+    } catch (error)
+    {
+        return res.status(500).json({ message: 'Error listing endpoints.' });
+    }
+});
+
+router.get('/list-files-in-folder', async (req, res) =>
+{
+    const shelfName = req.body.shelfName; // Get the shelfName from query parameters
+
+    if (!shelfName)
+    {
+        return res.status(400).json({ error: 'shelfName must be provided as a query parameter.' });
+    }
+
+    try
+    {
+        const pdfHelper = new PdfHelper();
+
+        // List all file names in the chosen folder on Dropbox
+        const fileNames = await pdfHelper.listFilesInFolder(shelfName);
+
+        return res.status(200).json({ fileNames });
+    } catch (error)
+    {
+        return res.status(500).json({ message: 'Error listing files in folder.' });
+    }
+});
+
 
 
 module.exports = router;

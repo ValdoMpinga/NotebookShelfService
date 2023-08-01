@@ -126,51 +126,108 @@ class PdfHelper
         }
     }
 
+
     async addPagesToPDF(notebookName, newImages)
     {
         const userDir = path.join('uploads', notebookName);
-        const existingPDFPath = path.join('pdfs',`${notebookName}_notebook.pdf`);
+        const existingPDFPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
 
-        if (!fs.existsSync(existingPDFPath))
+        try
         {
-            throw new Error('Existing PDF file not found.');
-        }
+            // Download the existing PDF from Dropbox
+            const dropboxFilePath = dropboxMastersDir + `/${notebookName}_notebook.pdf`;
+            const downloadResponse = await dbx.filesDownload({ path: dropboxFilePath });
+            const existingPDFBytes = downloadResponse.result.fileBinary;
 
-        // Read the existing PDF using pdf-lib
-        const existingPDFBytes = fs.readFileSync(existingPDFPath);
-        const existingPDF = await PDFLibDocument.load(existingPDFBytes);
-        const { width, height } = existingPDF.getPage(0).getSize();
+            // Read the existing PDF using pdf-lib
+            const existingPDF = await PDFLibDocument.load(existingPDFBytes);
+            const { width, height } = existingPDF.getPage(0).getSize();
 
-        // Append new pages with the new images to the existing PDF
-        for (const newImage of newImages)
-        {
-            const page = existingPDF.addPage([width, height]);
-            const imagePath = path.join(userDir, newImage.filename);
-            const imageBytes = fs.readFileSync(imagePath);
-            const image = await existingPDF.embedJpg(imageBytes);
+            // Append new pages with the new images to the existing PDF
+            for (const newImage of newImages)
+            {
+                const page = existingPDF.addPage([width, height]);
+                const imagePath = path.join(userDir, newImage.filename);
+                const imageBytes = fs.readFileSync(imagePath);
+                const image = await existingPDF.embedJpg(imageBytes);
 
-            const imageWidth = image.width;
-            const imageHeight = image.height;
-            const scale = Math.min(width / imageWidth, height / imageHeight);
+                const imageWidth = image.width;
+                const imageHeight = image.height;
+                const scale = Math.min(width / imageWidth, height / imageHeight);
 
-            page.drawImage(image, {
-                x: 0,
-                y: 0,
-                width: imageWidth * scale,
-                height: imageHeight * scale,
+                page.drawImage(image, {
+                    x: 0,
+                    y: 0,
+                    width: imageWidth * scale,
+                    height: imageHeight * scale,
+                });
+            }
+
+            // Save the updated PDF
+            const updatedPDFBytes = await existingPDF.save();
+
+            // Upload the updated PDF back to Dropbox
+            const uploadResponse = await dbx.filesUpload({
+                path: dropboxFilePath,
+                contents: updatedPDFBytes,
+                mode: { '.tag': 'overwrite' },
             });
+
+            console.log('Pages successfully added to existing PDF:', dropboxFilePath);
+
+            return dropboxFilePath;
+        } catch (error)
+        {
+            console.error('Error adding pages to existing PDF:', error);
+            throw error;
         }
-
-        // Save the updated PDF
-        const updatedPDFBytes = await existingPDF.save();
-
-        // Write the updated PDF back to the file
-        fs.writeFileSync(existingPDFPath, updatedPDFBytes);
-
-        console.log('Pages successfully added to existing PDF:', existingPDFPath);
-
-        return existingPDFPath;
     }
+
+    // async addPagesToPDF(notebookName, newImages)
+    // {
+    //     const userDir = path.join('uploads', notebookName);
+    //     const existingPDFPath = path.join('pdfs',`${notebookName}_notebook.pdf`);
+
+    //     if (!fs.existsSync(existingPDFPath))
+    //     {
+    //         throw new Error('Existing PDF file not found.');
+    //     }
+
+    //     // Read the existing PDF using pdf-lib
+    //     const existingPDFBytes = fs.readFileSync(existingPDFPath);
+    //     const existingPDF = await PDFLibDocument.load(existingPDFBytes);
+    //     const { width, height } = existingPDF.getPage(0).getSize();
+
+    //     // Append new pages with the new images to the existing PDF
+    //     for (const newImage of newImages)
+    //     {
+    //         const page = existingPDF.addPage([width, height]);
+    //         const imagePath = path.join(userDir, newImage.filename);
+    //         const imageBytes = fs.readFileSync(imagePath);
+    //         const image = await existingPDF.embedJpg(imageBytes);
+
+    //         const imageWidth = image.width;
+    //         const imageHeight = image.height;
+    //         const scale = Math.min(width / imageWidth, height / imageHeight);
+
+    //         page.drawImage(image, {
+    //             x: 0,
+    //             y: 0,
+    //             width: imageWidth * scale,
+    //             height: imageHeight * scale,
+    //         });
+    //     }
+
+    //     // Save the updated PDF
+    //     const updatedPDFBytes = await existingPDF.save();
+
+    //     // Write the updated PDF back to the file
+    //     fs.writeFileSync(existingPDFPath, updatedPDFBytes);
+
+    //     console.log('Pages successfully added to existing PDF:', existingPDFPath);
+
+    //     return existingPDFPath;
+    // }
 }
 
 module.exports = PdfHelper;

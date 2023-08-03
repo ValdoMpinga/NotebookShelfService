@@ -204,7 +204,7 @@ class PdfHelper
         }
     }
 
-    async createDropboxShelf(oldShelfName, newShelfName)
+    async updateDropboxShelf(oldShelfName, newShelfName)
     {
         // Update the shelfName to be in the format '/Masters/shelfName'
 
@@ -225,12 +225,12 @@ class PdfHelper
         }
     }
     
-    async deleteDropboxPDF(shelfName, notebook)
+    async deleteDropboxPDF(shelfName, notebookName)
     {
         try
         {
             // Construct the path of the PDF file on Dropbox
-            const pdfFilePath = `/${shelfName}/${notebook}_notebook.pdf`;
+            const pdfFilePath = `/${shelfName}/${notebookName}_notebook.pdf`;
 
             console.log(pdfFilePath);
             // Delete the PDF file from Dropbox
@@ -312,6 +312,48 @@ class PdfHelper
             throw dropboxError;
         }
     }
+
+    async createDropboxShelf(shelfName)
+    {
+        // Create a new shelf directory on Dropbox
+
+        try
+        {
+            // Create the new shelf directory on Dropbox
+            const createResponse = await dbx.filesCreateFolderV2({
+                path: shelfName,
+            });
+
+            console.log('Dropbox shelf created:', createResponse);
+            return createResponse;
+        } catch (dropboxError)
+        {
+            console.error('Error creating Dropbox shelf:', dropboxError);
+            throw dropboxError;
+        }
+    }
+
+    async getDropboxPDFContent(shelfName, notebookName)
+    {
+        try
+        {
+            // Construct the path of the PDF file on Dropbox
+            const pdfFilePath = `/${shelfName}/${notebookName}_notebook.pdf`;
+
+            // Get the PDF file content from Dropbox
+            const response = await dbx.filesDownload({
+                path: pdfFilePath,
+            });
+
+            console.log(response.fileBinary);
+            return response;
+        } catch (dropboxError)
+        {
+            console.error('Error fetching PDF file from Dropbox:', dropboxError);
+            throw dropboxError;
+        }
+    }
+
 
 }
 

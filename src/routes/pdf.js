@@ -15,6 +15,7 @@ const { Dropbox } = require('dropbox');
 const dbx = new Dropbox({
     accessToken: process.env.DROPBOX_ACCESS_TOKEN,
 })
+const pdfHelper = new PdfHelper();
 
 router.route('/get').get((request, response) =>
 {
@@ -168,7 +169,7 @@ router.post('/update-shelf', async (req, res) =>
         const pdfHelper = new PdfHelper();
 
         // Update the shelf on Dropbox
-        const moveResponse = await pdfHelper.createDropboxShelf(oldShelfName, newShelfName);
+        const moveResponse = await pdfHelper.updateDropboxShelf(oldShelfName, newShelfName);
 
         return res.status(200).json({ message: 'Shelf renamed successfully.', moveResponse });
     } catch (error)
@@ -180,13 +181,13 @@ router.post('/update-shelf', async (req, res) =>
 router.post('/delete-notebook', async (req, res) =>
 {
     const shelfName = req.body.shelfName;
-    const notebook = req.body.notebook;
+    const notebookName = req.body.notebookName;
 
     console.log('Deleting PDF:');
     console.log('Shelf Name:', shelfName);
-    console.log('Notebook:', notebook);
+    console.log('Notebook:', notebookName);
 
-    if (!shelfName || !notebook)
+    if (!shelfName || !notebookName)
     {
         return res.status(400).json({ error: 'Both shelfName and notebook must be provided in the request body.' });
     }
@@ -196,7 +197,7 @@ router.post('/delete-notebook', async (req, res) =>
         const pdfHelper = new PdfHelper();
 
         // Delete the PDF file on Dropbox
-        const deleteResponse = await pdfHelper.deleteDropboxPDF(shelfName, notebook);
+        const deleteResponse = await pdfHelper.deleteDropboxPDF(shelfName, notebookName);
 
         return res.status(200).json({ message: 'PDF file deleted successfully.', deleteResponse });
     } catch (error)
@@ -251,7 +252,7 @@ router.get('/list-endpoints', async (req, res) =>
     }
 });
 
-router.get('/list-files-in-folder', async (req, res) =>
+router.post('/list-files-in-folder', async (req, res) =>
 {
     const shelfName = req.body.shelfName; // Get the shelfName from query parameters
 
@@ -271,6 +272,25 @@ router.get('/list-files-in-folder', async (req, res) =>
     } catch (error)
     {
         return res.status(500).json({ message: 'Error listing files in folder.' });
+    }
+});
+
+router.post('/get-pdf-content', async (req, res) =>
+{
+    const { shelfName, notebookName } = req.body;
+
+    try
+    {
+        // Get the PDF content using the helper function
+        const pdfContent = await pdfHelper.getDropboxPDFContent(shelfName, notebookName);
+
+        // Send the PDF content as a response
+        res.setHeader('Content-Type', 'application/pdf');
+        res.send(pdfContent.result.fileBinary);
+    } catch (error)
+    {
+        console.error('Error fetching PDF content:', error);
+        res.status(500).json({ error: 'Error fetching PDF content' });
     }
 });
 

@@ -2,19 +2,38 @@
 
 require('dotenv').config();
 
+
 //imports
-const pdfController = require('../controllers/pdfController');
 const express = require("express");
 const router = express.Router();
 const upload = require('../utils/multerSetup');
 const PdfHelper = require('../helpers/pdfHelper');
-const pdfControllerInstance = new pdfController();
 const { Dropbox } = require('dropbox');
-
+const axios = require('axios');
 
 const dbx = new Dropbox({
-    accessToken: process.env.DROPBOX_ACCESS_TOKEN,
+    accessToken: process.env.DROPBOX_API_KEY,
 })
+
+router.get('/getAccessToken', async (req, res) =>
+{
+    try
+    {
+        console.log(process.env.DROPBOX_API_KEY);
+        console.log(process.env.DROPBOX_APP_SECRET);
+        const tokenResponse = await dbx.auth.getAccessTokenFromCode(scopes);
+        const accessToken = tokenResponse.result.access_token;
+
+        // Now you have the access token to use for API requests
+        console.log('Access Token:', accessToken);
+
+        res.json({ accessToken });
+    } catch (error)
+    {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'An error occurred' });
+    }
+});
 
 router.route('/get').get((request, response) =>
 {
@@ -241,17 +260,27 @@ router.get('/list-endpoints', async (req, res) =>
     {
         const pdfHelper = new PdfHelper();
 
+        // Log: Request received to list endpoints
+        console.log('Received request to list endpoints');
+
         // List all endpoints on Dropbox
         const endpoints = await pdfHelper.listDropboxEndpoints();
+
+        // Log: Endpoints successfully retrieved
+        console.log('Endpoints retrieved successfully:', endpoints);
 
         return res.status(200).json({ endpoints });
     } catch (error)
     {
+        // Log: Error occurred while listing endpoints
+        console.error('Error listing endpoints:', error);
+
         return res.status(500).json({ message: 'Error listing endpoints.' });
     }
 });
 
-router.get('/list-files-in-folder', async (req, res) =>
+
+router.post('/list-files-in-folder', async (req, res) =>
 {
     const shelfName = req.body.shelfName; // Get the shelfName from query parameters
 

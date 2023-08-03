@@ -5,13 +5,15 @@ const { PDFDocument: PDFLibDocument, rgb } = require('pdf-lib');
 const { Dropbox } = require('dropbox');
 require('dotenv').config();
 
-const dropboxMastersDir = '/Masters'; // The path to the "Masters" directory in the user's Dropbox
-
 const dbx = new Dropbox({
     accessToken: process.env.DROPBOX_ACCESS_TOKEN,
 })
+
+
 class PdfHelper
 {
+  
+
     saveImagesToUserDir(notebookName, files)
     {
         const userDir = path.join('uploads', notebookName);
@@ -224,7 +226,7 @@ class PdfHelper
             throw dropboxError;
         }
     }
-    
+
     async deleteDropboxPDF(shelfName, notebook)
     {
         try
@@ -312,6 +314,39 @@ class PdfHelper
             throw dropboxError;
         }
     }
+
+
+    // Function to renew the token
+    async renewToken()
+    {
+        try
+        {
+            // Generate a new app token from the Dropbox Developer Console
+            const NEW_APP_TOKEN = 'YOUR_NEW_APP_TOKEN';
+
+            // Update the Dropbox instance with the new token
+            dbx.setAccessToken(NEW_APP_TOKEN);
+
+            // List files in the root directory as a test
+            const response = await dbx.filesListFolder({ path: '' });
+            const items = response.result.entries;
+            renderItems(items);
+        } catch (error)
+        {
+            console.error('Token renewal error:', error);
+        }
+    }
+
+    // Render a list of items
+    renderItems(items)
+    {
+        items.forEach(item =>
+        {
+            console.log(item.name);
+        });
+    }
+
+
 
 }
 

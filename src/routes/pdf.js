@@ -275,6 +275,29 @@ router.post('/list-files-in-folder', async (req, res) =>
     }
 });
 
+router.post('/list-files-in-folder2', async (req, res) =>
+{
+    const shelfName = req.body.shelfName; // Get the shelfName from query parameters
+
+    if (!shelfName)
+    {
+        return res.status(400).json({ error: 'shelfName must be provided as a query parameter.' });
+    }
+
+    try
+    {
+        const pdfHelper = new PdfHelper();
+
+        // List all file names in the chosen folder on Dropbox
+        const fileNames = await pdfHelper.listFilesInFolder2(shelfName);
+
+        return res.status(200).json({ fileNames });
+    } catch (error)
+    {
+        return res.status(500).json({ message: 'Error listing files in folder.' });
+    }
+});
+
 router.post('/get-pdf-content', async (req, res) =>
 {
     const { shelfName, notebookName } = req.body;
@@ -293,6 +316,7 @@ router.post('/get-pdf-content', async (req, res) =>
         res.status(500).json({ error: 'Error fetching PDF content' });
     }
 });
+
 
 
 

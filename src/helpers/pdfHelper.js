@@ -354,6 +354,39 @@ class PdfHelper
         }
     }
 
+    async  listFilesInFolder2(shelfName)
+{
+    try
+    {
+        console.log("in");
+        // Concatenate shelfName with a leading slash to form the folder path
+        const folderPath = `/${shelfName}`;
+
+        // Get the list of files and directories in the specified folder
+        const listResponse = await dbx.filesListFolder({
+            path: folderPath,
+        });
+        // console.log(listResponse.result.entries);
+
+        // Process the entries to get an array of objects with file names and page counts
+        const fileData = await listResponse.result.entries
+            .filter((entry) => entry['.tag'] === 'file')
+            .map(async (entry) =>
+            {
+                const fileContent = await dbx.filesDownload({ path: entry.path_display });
+                const pageCount = countPages(fileContent.result.fileBinary);
+                console.log(pageCount);
+                return { name: entry.name, pageCount };
+            });
+        return Promise.all(fileData);
+    } catch (dropboxError)
+    {
+        console.error('Error listing files in folder on Dropbox:', dropboxError);
+        throw dropboxError;
+    }
+}
+
+
 
 }
 

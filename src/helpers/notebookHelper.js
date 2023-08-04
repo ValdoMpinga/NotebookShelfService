@@ -1,34 +1,21 @@
-const fs = require('fs');
+"use strict";
+
+const { Dropbox } = require('dropbox');
 const path = require('path');
+const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const { PDFDocument: PDFLibDocument, rgb } = require('pdf-lib');
-const { Dropbox } = require('dropbox');
-require('dotenv').config();
 
-const dropboxMastersDir = '/Masters'; // The path to the "Masters" directory in the user's Dropbox
-
-const dbx = new Dropbox({
-    accessToken: process.env.DROPBOX_ACCESS_TOKEN,
-})
-class PdfHelper
+class NotebookHelper
 {
-    saveImagesToUserDir(notebookName, files)
+    constructor()
     {
-        const userDir = path.join('uploads', notebookName);
-        if (!fs.existsSync(userDir))
-        {
-            fs.mkdirSync(userDir, { recursive: true });
-        }
-
-        files.forEach((file) =>
-        {
-            const newPath = path.join(userDir, file.filename);
-            fs.renameSync(file.path, newPath); // Move the file to the user directory
+        this.dbx = new Dropbox({
+            accessToken: process.env.DROPBOX_ACCESS_TOKEN,
         });
     }
 
-
-    async convertToPDF(shelfName, notebookName)
+    async convertImagesToPdfNotebook(shelfName, notebookName)
     {
         const userDir = path.join('uploads', notebookName);
         const pdfPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
@@ -87,7 +74,7 @@ class PdfHelper
 
                         // Upload the PDF to the "Masters" directory in the user's Dropbox account
                         const dropboxFilePath = shelfName + `/${notebookName}_notebook.pdf`;
-                        const uploadResponse = await dbx.filesUpload({
+                        const uploadResponse = await this.dbx.filesUpload({
                             path: dropboxFilePath,
                             contents: pdfContents,
                         });
@@ -112,7 +99,7 @@ class PdfHelper
         });
     }
 
-    async addPagesToPDF(shelfName, notebookName, newImages)
+    async addPagesToNotebook(shelfName, notebookName, newImages)
     {
         const userDir = path.join('uploads', notebookName);
 
@@ -120,7 +107,7 @@ class PdfHelper
         {
             // Download the existing PDF from Dropbox
             const dropboxFilePath = shelfName + `/${notebookName}_notebook.pdf`;
-            const downloadResponse = await dbx.filesDownload({ path: dropboxFilePath });
+            const downloadResponse = await this.dbx.filesDownload({ path: dropboxFilePath });
             const existingPDFBytes = downloadResponse.result.fileBinary;
 
             // Read the existing PDF using pdf-lib
@@ -151,7 +138,7 @@ class PdfHelper
             const updatedPDFBytes = await existingPDF.save();
 
             // Upload the updated PDF back to Dropbox
-            const uploadResponse = await dbx.filesUpload({
+            const uploadResponse = await this.dbx.filesUpload({
                 path: dropboxFilePath,
                 contents: updatedPDFBytes,
                 mode: { '.tag': 'overwrite' },
@@ -167,87 +154,7 @@ class PdfHelper
         }
     }
 
-    //Deletes the temporary directory used to store the images which were converted to pdf
-    deleteTemporaryNotebookDir(notebook)
-    {
-        const notebookName = path.join('uploads', notebook);
-
-        if (fs.existsSync(notebookName))
-        {
-            fs.rmdirSync(notebookName, { recursive: true });
-            console.log(`Notebook directory "${notebookName}" deleted successfully.`);
-
-            if (fs.existsSync('pdfs'))
-                fs.rmdirSync('pdfs', { recursive: true });
-        } else
-        {
-            console.log(`Notebook directory "${notebookName}" not found.`);
-        }
-    }
-
-    async deleteDropboxDirectory(directoryPath)
-    {
-        try
-        {
-            console.log(directoryPath);
-            // Delete the directory recursively and return the response
-            const deleteResponse = await dbx.filesDeleteV2({
-                path: directoryPath,
-            });
-
-            console.log('Dropbox directory deleted:', deleteResponse);
-            return deleteResponse;
-        } catch (dropboxError)
-        {
-            console.error('Error deleting Dropbox directory:', dropboxError);
-            throw dropboxError;
-        }
-    }
-
-    async updateDropboxShelf(oldShelfName, newShelfName)
-    {
-        // Update the shelfName to be in the format '/Masters/shelfName'
-
-        try
-        {
-            // Move/rename the shelf directory on Dropbox
-            const moveResponse = await dbx.filesMoveV2({
-                from_path: oldShelfName,
-                to_path: newShelfName,
-            });
-
-            console.log('Dropbox shelf renamed:', moveResponse);
-            return moveResponse;
-        } catch (dropboxError)
-        {
-            console.error('Error renaming Dropbox shelf:', dropboxError);
-            throw dropboxError;
-        }
-    }
-    
-    async deleteDropboxPDF(shelfName, notebookName)
-    {
-        try
-        {
-            // Construct the path of the PDF file on Dropbox
-            const pdfFilePath = `/${shelfName}/${notebookName}_notebook.pdf`;
-
-            console.log(pdfFilePath);
-            // Delete the PDF file from Dropbox
-            const deleteResponse = await dbx.filesDeleteV2({
-                path: pdfFilePath,
-            });
-
-            console.log('PDF file deleted from Dropbox:', deleteResponse);
-            return deleteResponse;
-        } catch (dropboxError)
-        {
-            console.error('Error deleting PDF file from Dropbox:', dropboxError);
-            throw dropboxError;
-        }
-    }
-
-    async renameDropboxPDF(shelfName, oldNotebook, newNotebook)
+    async renameNotebook(shelfName, oldNotebook, newNotebook)
     {
         try
         {
@@ -256,7 +163,7 @@ class PdfHelper
             const newPdfFilePath = `/${shelfName}/${newNotebook}_notebook.pdf`;
 
             // Rename the PDF file on Dropbox
-            const moveResponse = await dbx.filesMoveV2({
+            const moveResponse = await this.dbx.filesMoveV2({
                 from_path: oldPdfFilePath,
                 to_path: newPdfFilePath,
             });
@@ -270,25 +177,46 @@ class PdfHelper
         }
     }
 
-    async listDropboxEndpoints(folderPath = '')
+    deleteTemporaryNotebookDir(notebook)
+    {
+        const notebookName = path.join('uploads', notebook);
+
+        if (fs.existsSync(notebookName))
+        {
+            fs.rmSync(notebookName, { recursive: true });
+            console.log(`Notebook directory "${notebookName}" deleted successfully.`);
+
+            if (fs.existsSync('pdfs'))
+                fs.rmSync('pdfs', { recursive: true });
+        } else
+        {
+            console.log(`Notebook directory "${notebookName}" not found.`);
+        }
+    }
+
+    async deleteNotebook(shelfName, notebookName)
     {
         try
         {
-            // Get the list of files and directories in the specified folder
-            const listResponse = await dbx.filesListFolder({
-                path: folderPath,
+            // Construct the path of the PDF file on Dropbox
+            const pdfFilePath = `/${shelfName}/${notebookName}_notebook.pdf`;
+
+            console.log(pdfFilePath);
+            // Delete the PDF file from Dropbox
+            const deleteResponse = await this.dbx.filesDeleteV2({
+                path: pdfFilePath,
             });
 
-            const endpoints = listResponse.result.entries.map((entry) => entry.name);
-            return endpoints;
+            console.log('PDF file deleted from Dropbox:', deleteResponse);
+            return deleteResponse;
         } catch (dropboxError)
         {
-            console.error('Error listing endpoints on Dropbox:', dropboxError);
+            console.error('Error deleting PDF file from Dropbox:', dropboxError);
             throw dropboxError;
         }
     }
 
-    async listFilesInFolder(shelfName)
+    async getNotebooks(shelfName)
     {
         try
         {
@@ -296,7 +224,7 @@ class PdfHelper
             const folderPath = `/${shelfName}`;
 
             // Get the list of files and directories in the specified folder
-            const listResponse = await dbx.filesListFolder({
+            const listResponse = await this.dbx.filesListFolder({
                 path: folderPath,
             });
 
@@ -313,27 +241,7 @@ class PdfHelper
         }
     }
 
-    async createDropboxShelf(shelfName)
-    {
-        // Create a new shelf directory on Dropbox
-
-        try
-        {
-            // Create the new shelf directory on Dropbox
-            const createResponse = await dbx.filesCreateFolderV2({
-                path: shelfName,
-            });
-
-            console.log('Dropbox shelf created:', createResponse);
-            return createResponse;
-        } catch (dropboxError)
-        {
-            console.error('Error creating Dropbox shelf:', dropboxError);
-            throw dropboxError;
-        }
-    }
-
-    async getDropboxPDFContent(shelfName, notebookName)
+    async getNotebookContent(shelfName, notebookName)
     {
         try
         {
@@ -341,7 +249,7 @@ class PdfHelper
             const pdfFilePath = `/${shelfName}/${notebookName}_notebook.pdf`;
 
             // Get the PDF file content from Dropbox
-            const response = await dbx.filesDownload({
+            const response = await this.dbx.filesDownload({
                 path: pdfFilePath,
             });
 
@@ -354,41 +262,21 @@ class PdfHelper
         }
     }
 
-    async  listFilesInFolder2(shelfName)
-{
-    try
+    saveImagesToUploadDir(notebookName, files)
     {
-        console.log("in");
-        // Concatenate shelfName with a leading slash to form the folder path
-        const folderPath = `/${shelfName}`;
+        const uploadsDir = path.join('uploads', notebookName);
+        if (!fs.existsSync(uploadsDir))
+        {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
 
-        // Get the list of files and directories in the specified folder
-        const listResponse = await dbx.filesListFolder({
-            path: folderPath,
+        files.forEach((file) =>
+        {
+            const newPath = path.join(uploadsDir, file.filename);
+            fs.renameSync(file.path, newPath);
         });
-        // console.log(listResponse.result.entries);
-
-        // Process the entries to get an array of objects with file names and page counts
-        const fileData = await listResponse.result.entries
-            .filter((entry) => entry['.tag'] === 'file')
-            .map(async (entry) =>
-            {
-                const fileContent = await dbx.filesDownload({ path: entry.path_display });
-                const pageCount = countPages(fileContent.result.fileBinary);
-                console.log(pageCount);
-                return { name: entry.name, pageCount };
-            });
-        return Promise.all(fileData);
-    } catch (dropboxError)
-    {
-        console.error('Error listing files in folder on Dropbox:', dropboxError);
-        throw dropboxError;
     }
-}
-
-
 
 }
 
-module.exports = PdfHelper;
-
+module.exports = NotebookHelper;

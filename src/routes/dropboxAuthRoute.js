@@ -14,12 +14,6 @@ router.get('/authorize/redirect', async (req, res) =>
     return res.json(dropboxHelper.redirect(req.query.code))
 })
 
-router.get('/refresh-token', async (req, res) =>
-{
-    const refreshedAccessToken = await dropboxHelper.refreshAccessToken(process.env.DROPBOX_REFRESH_TOKEN)
-    console.log('Refreshed Access Token:', refreshedAccessToken);
-
-})
 
 module.exports = router
 

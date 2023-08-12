@@ -8,7 +8,6 @@ const authorize = () =>
 
 const redirect = (code) =>
 {
-    console.log("in, the code: " + code);
     let tokenUri = `https://api.dropbox.com/oauth2/token?grant_type=authorization_code&code=${code}&redirect_uri=${process.env.DROPBOX_REDIRECT_URI}`
 
     return axios({

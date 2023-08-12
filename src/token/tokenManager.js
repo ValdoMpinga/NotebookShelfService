@@ -28,7 +28,6 @@ async function refreshAccessToken(refreshToken)
         const response = await axios.post(tokenEndpoint, data);
         let newAccessToken = response.data.access_token;
         setAccessToken(newAccessToken); 
-        console.log("New token: " + newAccessToken);
     } catch (error)
     {
         console.error('Error refreshing access token:', error);

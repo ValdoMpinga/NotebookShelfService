@@ -1,14 +1,28 @@
 "use strict";
 
 const { Dropbox } = require('dropbox');
-
+const tokenManagerInstance = require('../token/tokenManager')
 class ShelfHelper
 {
     constructor()
     {
+        this.accessToken = tokenManagerInstance.getAccessToken();
         this.dbx = new Dropbox({
-            accessToken: process.env.DROPBOX_ACCESS_TOKEN,
+            accessToken: this.accessToken,
+            refreshToken: process.env.DROPBOX_REFRESH_TOKEN,
         });
+    }
+
+    async refreshAccessTokenIfNeeded()
+    {
+        const currentAccessToken = tokenManagerInstance.getAccessToken();
+        if (currentAccessToken !== this.accessToken)
+        {
+            this.accessToken = currentAccessToken;
+            this.dbx = new Dropbox({
+                accessToken: this.accessToken,
+            });
+        }
     }
 
     async createShelf(shelfName)
@@ -17,7 +31,8 @@ class ShelfHelper
 
         try
         {
-            // Create the new shelf directory on Dropbox
+            await this.refreshAccessTokenIfNeeded();
+
             const createResponse = await this.dbx.filesCreateFolderV2({
                 path: shelfName,
             });
@@ -35,7 +50,9 @@ class ShelfHelper
     {
         try
         {
-            // Get the list of files and directories in the specified folder
+          
+            await this.refreshAccessTokenIfNeeded();
+
             const listResponse = await this.dbx.filesListFolder({
                 path: folderPath,
             });
@@ -55,7 +72,8 @@ class ShelfHelper
 
         try
         {
-            // Move/rename the shelf directory on Dropbox
+            await this.refreshAccessTokenIfNeeded();
+
             const moveResponse = await this.dbx.filesMoveV2({
                 from_path: oldShelfName,
                 to_path: newShelfName,
@@ -74,8 +92,10 @@ class ShelfHelper
     {
         try
         {
-            console.log(directoryPath);
             // Delete the directory recursively and return the response
+
+            await this.refreshAccessTokenIfNeeded();
+
             const deleteResponse = await this.dbx.filesDeleteV2({
                 path: directoryPath,
             });
@@ -88,6 +108,8 @@ class ShelfHelper
             throw dropboxError;
         }
     }
+
+    
 }
 
 module.exports = ShelfHelper;

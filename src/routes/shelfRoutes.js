@@ -56,11 +56,10 @@ router.post('/update-shelf', async (req, res) =>
     }
 });
 
-router.get('/get-shelfs', async (req, res) =>
+router.get('/get-shelves', async (req, res) =>
 {
     try
     {
-        // List all endpoints on Dropbox
         const endpoints = await shelfHelper.getShelfs();
 
         return res.status(200).json({ endpoints });

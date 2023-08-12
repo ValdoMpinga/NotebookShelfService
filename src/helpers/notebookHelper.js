@@ -5,14 +5,29 @@ const path = require('path');
 const fs = require('fs');
 const PDFDocument = require('pdfkit');
 const { PDFDocument: PDFLibDocument, rgb } = require('pdf-lib');
+const tokenManagerInstance = require('../token/tokenManager')
 
 class NotebookHelper
 {
     constructor()
     {
+        this.accessToken = tokenManagerInstance.getAccessToken();
         this.dbx = new Dropbox({
-            accessToken: process.env.DROPBOX_ACCESS_TOKEN,
+            accessToken: this.accessToken,
+            refreshToken: process.env.DROPBOX_REFRESH_TOKEN,
         });
+    }
+
+    async refreshAccessTokenIfNeeded()
+    {
+        const currentAccessToken = tokenManagerInstance.getAccessToken();
+        if (currentAccessToken !== this.accessToken)
+        {
+            this.accessToken = currentAccessToken;
+            this.dbx = new Dropbox({
+                accessToken: this.accessToken,
+            });
+        }
     }
 
     async convertImagesToPdfNotebook(shelfName, notebookName)
@@ -20,8 +35,13 @@ class NotebookHelper
         const userDir = path.join('uploads', notebookName);
         const pdfPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
 
+        await this.refreshAccessTokenIfNeeded();
+        
         return new Promise((resolve, reject) =>
         {
+  
+
+
             fs.readdir(userDir, async (err, files) =>
             {
                 if (err)
@@ -101,10 +121,13 @@ class NotebookHelper
 
     async addPagesToNotebook(shelfName, notebookName, newImages)
     {
-        const userDir = path.join('uploads', notebookName);
 
         try
         {
+            const userDir = path.join('uploads', notebookName);
+
+            await this.refreshAccessTokenIfNeeded();
+
             // Download the existing PDF from Dropbox
             const dropboxFilePath = shelfName + `/${notebookName}_notebook.pdf`;
             const downloadResponse = await this.dbx.filesDownload({ path: dropboxFilePath });
@@ -158,6 +181,9 @@ class NotebookHelper
     {
         try
         {
+            await this.refreshAccessTokenIfNeeded();
+
+
             // Construct the paths of the old and new PDF files on Dropbox
             const oldPdfFilePath = `/${shelfName}/${oldNotebook}_notebook.pdf`;
             const newPdfFilePath = `/${shelfName}/${newNotebook}_notebook.pdf`;
@@ -198,6 +224,9 @@ class NotebookHelper
     {
         try
         {
+            await this.refreshAccessTokenIfNeeded();
+
+
             // Construct the path of the PDF file on Dropbox
             const pdfFilePath = `/${shelfName}/${notebookName}_notebook.pdf`;
 
@@ -220,6 +249,9 @@ class NotebookHelper
     {
         try
         {
+            await this.refreshAccessTokenIfNeeded();
+
+
             // Concatenate shelfName with a leading slash to form the folder path
             const folderPath = `/${shelfName}`;
 
@@ -245,6 +277,8 @@ class NotebookHelper
     {
         try
         {
+            await this.refreshAccessTokenIfNeeded();
+
             // Construct the path of the PDF file on Dropbox
             const pdfFilePath = `/${shelfName}/${notebookName}_notebook.pdf`;
 
@@ -253,7 +287,7 @@ class NotebookHelper
                 path: pdfFilePath,
             });
 
-            console.log(response.fileBinary);
+            console.log(response.result.fileBinary);
             return response;
         } catch (dropboxError)
         {

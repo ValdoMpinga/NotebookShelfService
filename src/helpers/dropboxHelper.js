@@ -16,7 +16,7 @@ const redirect = (code) =>
         url: tokenUri
     }).then(res =>
     {
-        console.log(res);
+        console.log("Refresh token: " + res.data.refresh_token);
         return res
     }).catch(e =>
     {

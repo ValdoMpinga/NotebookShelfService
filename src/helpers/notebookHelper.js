@@ -36,36 +36,27 @@ class NotebookHelper
         const pdfPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
 
         await this.refreshAccessTokenIfNeeded();
-        
-        return new Promise((resolve, reject) =>
+
+        return new Promise(async (resolve, reject) =>
         {
-  
-
-
-            fs.readdir(userDir, async (err, files) =>
+            try
             {
-                if (err)
-                {
-                    return reject('Error reading user directory.');
-                }
+                const files = await fs.promises.readdir(userDir);
 
                 if (files.length === 0)
                 {
                     return reject('No images found for the user.');
                 }
 
-                // Create the "pdfs" directory if it doesn't exist
                 if (!fs.existsSync('pdfs'))
                 {
                     fs.mkdirSync('pdfs');
                 }
 
-                // Create a new PDF document
                 const doc = new PDFDocument();
                 const writeStream = fs.createWriteStream(pdfPath);
                 doc.pipe(writeStream);
 
-                // Add each image to the PDF as a new page
                 for (const [index, file] of files.entries())
                 {
                     if (index > 0)
@@ -75,11 +66,11 @@ class NotebookHelper
 
                     const imagePath = path.join(userDir, file);
                     doc.image(imagePath, {
-                        fit: [500, 500],
+                        width: doc.page.width,
+                        height: doc.page.height,
                     });
                 }
 
-                // Finalize the PDF and close the write stream
                 doc.end();
                 writeStream.on('finish', async () =>
                 {
@@ -87,8 +78,6 @@ class NotebookHelper
 
                     try
                     {
-                        // Initialize the Dropbox SDK with your access token
-
                         // Read the PDF file's contents
                         const pdfContents = fs.readFileSync(pdfPath);
 
@@ -115,9 +104,14 @@ class NotebookHelper
                     console.error('Error writing PDF to file:', err);
                     reject('Error writing PDF to file.');
                 });
-            });
+            } catch (err)
+            {
+                console.error('Error reading user directory:', err);
+                reject('Error reading user directory.');
+            }
         });
     }
+
 
     async addPagesToNotebook(shelfName, notebookName, newImages)
     {
@@ -310,7 +304,6 @@ class NotebookHelper
             fs.renameSync(file.path, newPath);
         });
     }
-
 }
 
 module.exports = NotebookHelper;

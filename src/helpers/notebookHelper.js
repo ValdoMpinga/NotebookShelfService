@@ -30,7 +30,8 @@ class NotebookHelper
         }
     }
 
-    async convertImagesToPdfNotebook(shelfName, notebookName)
+
+    async  convertImagesToPdfNotebook(shelfName, notebookName)
     {
         const userDir = path.join('uploads', notebookName);
         const pdfPath = path.join('pdfs', `${notebookName}_notebook.pdf`);
@@ -65,9 +66,14 @@ class NotebookHelper
                     }
 
                     const imagePath = path.join(userDir, file);
-                    doc.image(imagePath, {
-                        width: doc.page.width,
-                        height: doc.page.height,
+                    const imageWidth = doc.page.width;
+                    const imageHeight = doc.page.height;
+                    const xPos = (imageWidth - doc.page.width) / 2;
+                    const yPos = (imageHeight - doc.page.height) / 2;
+
+                    doc.image(imagePath, xPos, yPos, {
+                        width: imageWidth,
+                        height: imageHeight,
                     });
                 }
 
@@ -78,10 +84,8 @@ class NotebookHelper
 
                     try
                     {
-                        // Read the PDF file's contents
                         const pdfContents = fs.readFileSync(pdfPath);
 
-                        // Upload the PDF to the "Masters" directory in the user's Dropbox account
                         const dropboxFilePath = shelfName + `/${notebookName}_notebook.pdf`;
                         const uploadResponse = await this.dbx.filesUpload({
                             path: dropboxFilePath,
@@ -90,7 +94,6 @@ class NotebookHelper
 
                         console.log('PDF uploaded to Dropbox:', uploadResponse);
 
-                        // Resolve with the generated PDF file path
                         resolve(pdfPath);
                     } catch (dropboxError)
                     {
@@ -111,8 +114,6 @@ class NotebookHelper
             }
         });
     }
-
-
     async addPagesToNotebook(shelfName, notebookName, newImages)
     {
         try

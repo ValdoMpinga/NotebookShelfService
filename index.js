@@ -3,8 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const tokenManagerInstance = require("./src/token/tokenManager");
+const os = require('os'); // Import the os module
 
-//routes
+// routes
 const shelfRouter = require('./src/routes/shelfRoutes');
 const notebookRouter = require('./src/routes/notebooksRoutes');
 const pingRouter = require('./src/routes/pingRoute');
@@ -22,10 +23,11 @@ app.listen(process.env.PORT, () =>
 {
     tokenRefreshAndStartInterval();
 
-    console.log(`server is listening on port ${process.env.PORT}`);
-
+    // Get the machine's IP address
+    const machineIPAddress = getMachineIPAddress();
+    console.log(`Server is listening on port ${process.env.PORT}`);
+    console.log(`Machine IP address: ${machineIPAddress}`);
 });
-
 
 function tokenRefreshAndStartInterval()
 {
@@ -53,9 +55,26 @@ function tokenRefreshAndStartInterval()
         });
 }
 
-
-
 app.use('/shelf', shelfRouter);
 app.use('/notebook', notebookRouter);
 app.use('/ping', pingRouter);
 app.use('/dropbox', dropboxAuthRouter);
+
+// Function to get the machine's IP address
+function getMachineIPAddress()
+{
+    const interfaces = os.networkInterfaces();
+    let ipAddress = 'Unknown';
+
+    for (const key in interfaces)
+    {
+        const iface = interfaces[key].find(iface => iface.family === 'IPv4' && !iface.internal);
+        if (iface)
+        {
+            ipAddress = iface.address;
+            break;
+        }
+    }
+
+    return ipAddress;
+}

@@ -115,11 +115,9 @@ class NotebookHelper
 
     async addPagesToNotebook(shelfName, notebookName, newImages)
     {
-
         try
         {
             const userDir = path.join('uploads', notebookName);
-
             await this.refreshAccessTokenIfNeeded();
 
             // Download the existing PDF from Dropbox
@@ -143,9 +141,13 @@ class NotebookHelper
                 const imageHeight = image.height;
                 const scale = Math.min(width / imageWidth, height / imageHeight);
 
+                // Calculate the position to center the image
+                const xPos = (width - imageWidth * scale) / 2;
+                const yPos = (height - imageHeight * scale) / 2;
+
                 page.drawImage(image, {
-                    x: 0,
-                    y: 0,
+                    x: xPos,
+                    y: yPos,
                     width: imageWidth * scale,
                     height: imageHeight * scale,
                 });
@@ -170,6 +172,7 @@ class NotebookHelper
             throw error;
         }
     }
+
 
     async renameNotebook(shelfName, oldNotebook, newNotebook)
     {
